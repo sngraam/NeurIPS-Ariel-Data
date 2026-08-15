@@ -1,0 +1,173 @@
+Overview
+Take what you learned from NeurIPS - Ariel Data Challenge 2024 to push the boundaries of astronomical data analysis to new heights.
+
+This year's challenge, selected for this year's NeurIPS competition track, challenges you to create models that clean up messy telescope data in order to see the faint chemical traces in exoplanet atmospheres.
+
+Description
+When an exoplanet passes in front of its host star, a small amount of starlight filters through the planet's atmosphere. This technique, known as transit spectroscopy, enables researchers to analyze atmospheric composition. However, these signals are incredibly faint, often hidden by complex, time-dependent noise from both the instruments and the stars themselves.
+
+In this competition, you'll work with simulated data from ESA's Ariel mission, which aims to characterize 1,000 exoplanets after its 2029 launch. Your goal is to recover the true exoplanet spectrum from these noisy observations.
+
+This year's competition builds off of the 2024 competition of a similar nature, with a dataset that has been updated to be more realistic, incorporating effects such as stellar limb darkening, validated star-planet pairs, more diverse atmospheric models, and Ariel's actual observation cadence. This introduces new challenges related to generalization, data efficiency, and integrating observations from multiple visits.
+
+Your work could help accelerate the field of exoplanet research, directly support scientists preparing for the European Space Agency's (ESA) upcoming Ariel mission and deepen our understanding of these distant worlds, and ultimately contribute to answering one of astronomy's most profound questions: Are we alone in the universe?
+
+Evaluation
+
+This competition evaluates predicted spectra (μ_user) and corresponding uncertainties (σ_user) for different wavelengths against the ground truth pixel level spectrum (y) using using the Gaussian Log-likelihood (GLL) function.
+
+The GLL values from each pair will be summed across all wavelengths and across the entire test set to produce a final GLL value (L). The final GLL value will be transformed into a score using the following conversion function:
+
+We define L_ideal as the case where the submission perfectly matches the ground truth values, with an uncertainty of 10 parts per million (ppm) for AIRS and 1 PPM for FSG1. This ideal case is defined based on Ariel's Stability Requirement. For L_ref is defined using the mean and variance of the training dataset as its prediction for all instances.
+
+The channels are weighted proportionally to the spectral channel width divided by the number of spectral points per instrument. Additionally, FGS1 weight has been doubled to emphasize its importance:
+
+    FGS1: 2 × (0.2/1) = 0.4
+
+    AIRS-Ch0: 1.95/282 ≈ 0.0069 per spectral point
+
+The metric uses normalized versions of these weights, with fsg_weight set to 57.846 and all other channel weights set to 1.
+
+The score will return a float in the interval [0, 1], with higher scores corresponding to better performing models. Any score below 0 will be treated as 0.
+
+The full metric implementation is available here.
+Submission File
+
+You must predict a mean and uncertainty for each planet_id. An example submission file is included in the Data Files. Each submission row must include 567 columns, so we will not attempt to provide an example here. The leftmost column must be the planet_id, the next 283 columns must be the spectra, and the remaining columns the uncertainties.
+Submission File
+You must predict a mean and uncertainty for each planet_id. An example submission file is included in the Data Files. Each submission row must include 567 columns, so we will not attempt to provide an example here. The leftmost column must be the planet_id, the next 283 columns must be the spectra, and the remaining columns the uncertainties.
+
+Dataset Description
+Characterizing the chemistry of exoplanets is of the great active projects in astronomy. The European Space Agency's Ariel mission will gather data on roughly 1,000 exoplanets by observing them while they transit in front of their host stars. Even with the powerful instruments on board Ariel, the resulting data will be based on a limited number of photons and include a fair amount of noise. Your challenge in this competition is to extract the chemical spectrum of the atmospheres of exoplanets using simulated Ariel data.
+
+Relative to last year's challenge this iteration:
+
+Contains more train and test data.
+Uses unique star models for each planet.
+Has repeated observations of some planets.
+Incorporates upgrades to the physics model.
+
+
+This competition uses a hidden test set. When your submitted notebook is scored, the actual test data (including a full length sample submission) will be made available to your notebook. Expect to see roughly 1,100 exoplanets in the hidden test set.
+
+Files
+Metadata Files
+train.csv Ground truth spectra.
+
+wavelengths.csv The wavelength grid for each ground truth spectrum in the dataset.
+
+axis_info.parquet Axis information for both instruments (AIRS-CH0 and FGS1).
+
+adc_info.csv Analog-to-digital (ADC) conversion parameters (gain and offset) for restoring the original dynamic range of the data. Unlike last year's challenge, all planets use the same adc_info.
+
+[train/test]_star_info.csv
+
+planet_id: Unique identifier for the star-planet system.
+Rs: Stellar radius in solar radii (R☉).
+Ms: Stellar mass in solar masses (M☉).
+Ts: Stellar effective temperature in Kelvin.
+Mp: Planetary mass in Earth masses (M⊕).
+e: Orbital eccentricity (dimensionless).
+P: Orbital period in days.
+sma: Semi-major axis in stellar radii (Rs), showing the orbital distance relative to the stellar radii.
+i: Orbital inclination in degrees.
+sample_submission.csv A sample submission in the correct format.
+
+Signal Files
+The dataset comprises time series imagery from two separate instruments plus calibration data. Ariel contains multiple optical instruments, each specialising in different spectral bands and observing modes. FGS1 is the first channel of Ariel's Fine Guidance System (FGS). The main task of the Fine Guidance System is to enable centering, focusing, and guiding of the satellite but it will also provide high-precision photometry of the target star in the visible spectrum. It has a sensitivity between 0.60 and 0.80 µm. AIRS-CH0 is the first channel (CH0) of the Ariel InfraRed Spectrometer (AIRS). It is an infrared spectrometer with a sensitivity between 1.95 and 3.90 µm, and has a resolving power of approximately R=100. For more information about Ariel please visit the Ariel red book.
+
+When examining frames from either instrument, you'll notice the flux levels oscillate between low and high counts. This is intentional and due to the design of the observing mode. Each pixel in the telescope's detector acts like a charge accumulator. The process begins with a sub-exposure recording the initial charge level before accumulation starts. After a set exposure time, another sub-exposure captures the new charge level. The pixels are then reset, and this cycle repeats for the duration of the observation. This allows for detailed temporal information to be captured. It's particularly useful for observing rapid changes, such as those occurring during a planetary transit. Each observation generates 135,000 frames for FGS1 and 11,250 frames for AIRS-CH0. Some planets in this dataset include an additional round of observation data.
+
+[train/test]/[planet_id]/AIRS-CH0_signal_[observation_count].parquet signal data from the AIRS-CH0 instrument. Each file contains 11,250 rows of images captured at constant time steps noted in axis_info.parquet file for details of the time steps. Each 32 x 356 image has been flattened into 11392 columns. You can un-flatten the data with numpy.reshape(11250, 32, 356). The instruments generate data as uint16. To restore the full dynamic range you must multiply the data by the matching gain value from adc_info.csv and then add the offset value, also from adc_info.csv.
+
+[train/test]/[planet_id]/FGS1_signal_[observation_count].parquet signal data from the FGS1 instrument. Each file contains 135,000 rows of images at 0.1 second time steps. Each 32x32 image has been flattened into 1024 columns. You can un-flatten the data with numpy.reshape(135000, 32, 32). Similar to AIR-CH0, the data is generated in uint16. To restore its original dynamic range you must multiply the data by the matching gain value from adc_info.csv and then add the offset value, also from adc_info.csv.
+
+Calibration Files
+Calibration files record the electronic characteristics of the sensor and serve as "supporting frames" used in image post-processing to image signal to noise ratio. This website contains a brief introduction about the concept of calibration frames. This notebook may also be useful. The calibration files are largely duplicated.
+_{i} = [0, 1]
+[train/test]/[planet_id]/[AIRS-CH0/FGS1]_calibration_{i}/dark.parquet: Dark frames are exposures taken with the shutter closed, capturing the thermal noise and bias level of the sensor. These are used to subtract the dark current from science images.
+[train/test]/[planet_id]/[AIRS-CH0/FGS1]_calibration_{i}/dead.parquet: Identifies dead or hot pixels on the sensor. Dead pixels do not respond to light, while hot pixels consistently produce high signal levels regardless of incoming light.
+[train/test]/[planet_id]/[AIRS-CH0/FGS1]_calibration_{i}/flat.parquet: Flat field frames are created by imaging a uniformly illuminated surface. They are used to correct for variations in pixel-to-pixel sensitivity and optical system irregularities.
+[train/test]/[planet_id]/[AIRS-CH0/FGS1]_calibration_{i}/linear_corr.parquet: Information about the linearity correction of the sensor. The response of the pixels in the detector becomes less linear as they fill with electrons, approaching the point of saturation, where the pixel can no longer collect additional electrons and its response to light becomes flat. For an accurate estimate of the signal, the instrument's response as a function of the received charge is calibrated, and the correction is calculated using a polynomial of degree n. This polynomial allows for the conversion of the number of electrons collected/measured by the pixel into the number of electrons that the detector would have generated with a linear response.
+
+[train/test]/[planet_id]/[AIRS-CH0/FGS1]_calibration/read.parquet: Read noise frames capture the electronic noise introduced during the readout process of the sensor. This noise is present even when no light falls on the detector.
+
+
+
+#### metrix LB calculatation
+
+import numpy as np
+import pandas as pd
+import pandas.api.types
+import scipy.stats
+
+
+class ParticipantVisibleError(Exception):
+    pass
+
+
+def score(
+    solution: pd.DataFrame,
+    submission: pd.DataFrame,
+    row_id_column_name: str,
+    naive_mean: float,
+    naive_sigma: float,
+    fsg_sigma_true: float = 1e-6,
+    airs_sigma_true: float = 1e-5,
+    fgs_weight: float = 1,
+) -> float:
+    """
+    This is a Gaussian Log Likelihood based metric. For a submission, which contains the predicted mean (x_hat) and variance (x_hat_std),
+    we calculate the Gaussian Log-likelihood (GLL) value to the provided ground truth (x). We treat each pair of x_hat,
+    x_hat_std as a 1D gaussian, meaning there will be 283 1D gaussian distributions, hence 283 values for each test spectrum,
+    the GLL value for one spectrum is the sum of all of them.
+
+    Inputs:
+        - solution: Ground Truth spectra (from test set)
+            - shape: (nsamples, n_wavelengths)
+        - submission: Predicted spectra and errors (from participants)
+            - shape: (nsamples, n_wavelengths*2)
+        naive_mean: (float) mean from the train set.
+        naive_sigma: (float) standard deviation from the train set.
+        fsg_sigma_true: (float) standard deviation from the FSG1 instrument for the test set.
+        airs_sigma_true: (float) standard deviation from the AIRS instrument for the test set.
+        fgs_weight: (float) relative weight of the fgs channel
+    """
+
+    del solution[row_id_column_name]
+    del submission[row_id_column_name]
+
+    if submission.min().min() < 0:
+        raise ParticipantVisibleError('Negative values in the submission')
+    for col in submission.columns:
+        if not pandas.api.types.is_numeric_dtype(submission[col]):
+            raise ParticipantVisibleError(f'Submission column {col} must be a number')
+
+    n_wavelengths = len(solution.columns)
+    if len(submission.columns) != n_wavelengths * 2:
+        raise ParticipantVisibleError('Wrong number of columns in the submission')
+
+    y_pred = submission.iloc[:, :n_wavelengths].values
+    # Set a non-zero minimum sigma pred to prevent division by zero errors.
+    sigma_pred = np.clip(submission.iloc[:, n_wavelengths:].values, a_min=10**-15, a_max=None)
+    sigma_true = np.append(
+        np.array(
+            [
+                fsg_sigma_true,
+            ]
+        ),
+        np.ones(n_wavelengths - 1) * airs_sigma_true,
+    )
+    y_true = solution.values
+
+    GLL_pred = scipy.stats.norm.logpdf(y_true, loc=y_pred, scale=sigma_pred)
+    GLL_true = scipy.stats.norm.logpdf(y_true, loc=y_true, scale=sigma_true * np.ones_like(y_true))
+    GLL_mean = scipy.stats.norm.logpdf(y_true, loc=naive_mean * np.ones_like(y_true), scale=naive_sigma * np.ones_like(y_true))
+
+    # normalise the score, right now it becomes a matrix instead of a scalar.
+    ind_scores = (GLL_pred - GLL_mean) / (GLL_true - GLL_mean)
+
+    weights = np.append(np.array([fgs_weight]), np.ones(len(solution.columns) - 1))
+    weights = weights * np.ones_like(ind_scores)
+    submit_score = np.average(ind_scores, weights=weights)
+    return float(np.clip(submit_score, 0.0, 1.0))

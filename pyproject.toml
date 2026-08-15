@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ariel-exoplanet-spectra"
+version = "1.0.0"
+description = "Recovering exoplanet transmission spectra from noisy ESA Ariel telescope data. 63rd place / Bronze medal solution for the NeurIPS 2025 Ariel Data Challenge."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Sangram Patil" }]
+keywords = [
+    "astronomy",
+    "exoplanets",
+    "transit-spectroscopy",
+    "ariel",
+    "kaggle",
+    "time-series",
+    "xgboost",
+    "pytorch",
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "torch>=2.0",
+    "scipy>=1.10",
+    "scikit-learn>=1.2",
+    "astropy>=5.0",
+    "pyarrow>=12.0",
+    "tqdm>=4.64",
+    "matplotlib>=3.6",
+    "joblib>=1.2",
+    "xgboost>=2.0",
+    "polars>=0.20",
+    "pqdm>=0.2.0",
+]
+
+[project.scripts]
+ariel-infer = "ariel2025.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

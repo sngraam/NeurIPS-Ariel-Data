@@ -1,0 +1,22 @@
+# Core data science / ML
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.2
+matplotlib>=3.6
+tqdm>=4.64
+joblib>=1.2
+
+# Deep learning
+torch>=2.0
+
+# Gradient boosting
+xgboost>=2.0
+
+# Astronomical data handling
+astropy>=5.0
+pyarrow>=12.0
+polars>=0.20
+
+# Parallelization helper
+pqdm>=0.2.0
